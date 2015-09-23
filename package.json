@@ -1,21 +1,21 @@
 {
   "name": "save-autorun",
   "main": "./lib/save-autorun",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Automatically run shell commands when you save files.",
   "keywords": [
-	  "save",
-	  "command",
-	  "commands",
-	  "autorun"
+    "save",
+    "command",
+    "commands",
+    "autorun"
   ],
-  "repository": "https://github.com/hyperfresh/save-autorun",
+  "repository": "https://github.com/hyperfresh/save-autorun.git",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
   },
   "dependencies": {
-	"minimatch": "2.0.10",
-	"cson-safe": "*"
+    "minimatch": "2.0.10",
+    "cson-safe": "*"
   }
 }
