@@ -1,51 +1,8 @@
-minimatch = require 'minimatch' 		# for matching files to globs
-fs = require 'fs'						# for writing / reading files
-CSON = require 'cson-safe'				# for parsing CSON
-exec = require('child_process').exec	# for executing commands
+path = require 'path'
+{exec} = require 'child_process'
+{CompositeDisposable, TextEditor} = require 'atom'
 
-{CompositeDisposable} 	= require 'atom'
-{TextEditor} 			= require 'atom'
-
-# a container for shell methods
-Shell =
-	# callback (error, stdout, stderr)
-	exec: (cmd, dir, callback) ->
-		child = exec cmd, cwd: dir, callback
-
-# a container for config methods
-Config =
-	cson: {}
-	# gets the path of the main config file
-	getConfigPath: ->
-		return atom.getConfigDirPath() + '\\save-autorun.cson'
-
-	# reads from the main config file, or creates one if it doesn't exist
-	loadConfig: ->
-		configFile = @getConfigPath()
-		try
-			stats = fs.statSync configFile
-			@cson = CSON.parse fs.readFileSync(configFile)
-		catch
-			CSON.writeFileSync configFile, {}
-		console.log @cson
-
-	# gets all commands that apply to this file
-	getCommands: (file) ->
-		commands = []
-		relative = atom.project.relativize(file)
-		for glob, v of @cson
-			match = minimatch(relative, glob)
-			# console.log('minimatching ' + relative + ' to ' + glob)
-			if match
-				if (v instanceof Array)
-					for cmd in v
-						commands.push cmd
-				else
-					commands.push v.toString()
-		return commands
-
-module.exports = SaveAutorun =
-
+module.exports = class SaveAutorun
 	config:
 		timeout:
 			title: 'Command Timeout'
@@ -53,40 +10,82 @@ module.exports = SaveAutorun =
 			type: 'integer'
 			default: 500
 
-	configDir: null
+	# the current instance of CompositeDisposable
 	subscriptions: null
-	textEditor: null
+
+	# the current instance of SaveDefinitions
+	definitions: null
+
+	constructor: ->
 
 	activate: (state) ->
-		Config.loadConfig()
-
 		@subscriptions = new CompositeDisposable
 
 		@subscriptions.add atom.commands.add 'atom-workspace',
-			'save-autorun:execute-save-autoruns': => @executeSaveScript()
+			'save-autorun:execute-save-autoruns': => @runDefinitions()
+
+		@subscriptions.add atom.commands.add 'atom-workspace',
+			'save-autorun:open-config': => @definitions.load()
 
 		@subscriptions.add atom.workspace.observeTextEditors (textEditor) =>
-			@subscriptions.add textEditor.onDidSave (event) => @executeSaveScript(textEditor)
+			@subscriptions.add textEditor.onDidSave (event) => @runDefinitions(textEditor)
+
+		SaveDefinitions = require './save-definitions'
+		@definitions = new SaveDefinitions()
 
 	deactivate: ->
-		@subscriptions.dispose
+		@subscriptions.dispose()
 
-	executeSaveScript: ->
+	openConfig: ->
+		atom.workspace.open(config.path())
+
+	# executes a shell command
+	shell: (cmd, dir, callback) -> child = exec cmd, cwd: dir, callback
+
+	# replaces envvar-like variable patterns (${var}) with a value
+	replaceVar: (command, key, value) ->
+		regex = new RegExp('\\$\\{' + key + '\\}', 'ig')
+		matches = command.match(regex)
+		command = command.replace(regex, value)
+		return command
+
+	# prepares a command for execution by replacing any variables
+	# with editor information
+	prepareCommand: (command, textEditor) ->
+
+		filepath = textEditor.getPath()
+		ext = path.extname(filepath)
+
+		command = @replaceVar(command, 'file', path.basename(filepath))
+		command = @replaceVar(command, 'name', path.basename(filepath, ext))
+		command = @replaceVar(command, 'ext', ext)
+		command = @replaceVar(command, 'dir', path.dirname(filepath))
+		command = @replaceVar(command, 'path', filepath)
+
+		return command
+
+	runDefinitions: ->
 		textEditor = atom.workspace.getActiveTextEditor()
 		if textEditor?
-			@executeSaveScript textEditor
+			@runDefinitions textEditor
 		else
 			atom.notifications.addError("unable to run save scripts on this pane.")
 
-	executeSaveScript: (textEditor) ->
+	runDefinitions: (textEditor) ->
 		if textEditor?
 			filepath = textEditor.getPath()
-			directory = filepath.substring(0, filepath.lastIndexOf '\\') + '\\'
-			commands = Config.getCommands(filepath)
-			#console.log('commands for file ' + filepath + ': \n' + commands)
-			for cmd in commands
-				Shell.exec cmd, directory, (error, stdout, stderr) =>
-					if error is null
-						atom.notifications.addSuccess "successfully executed command", detail: cmd + '\n' + stdout
-					else
-						atom.notifications.addError "failed to execute command", detail: cmd + '\n' + error
+
+			# reload definitions if the definitions file was saved
+			if filepath is @definitions.path()
+				@definitions.reload()
+
+			# loop through all defined commands for this file
+			commands = @definitions.get textEditor.getPath()
+			if commands.length > 0
+				for rawCommand in commands
+					command = @prepareCommand(rawCommand, textEditor)
+					@shell command, path.dirname(filepath), (error, stdout, stderr) =>
+						if not error?
+							atom.notifications.addInfo command
+						else
+							atom.notifications.addError command, detail: error

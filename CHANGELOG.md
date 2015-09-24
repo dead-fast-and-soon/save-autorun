@@ -1,3 +1,7 @@
 ## 0.1.0 - First Release
-* Every feature added
-* Every bug fixed
+
+- added save-autorun.cson 
+
+## 0.2.0
+
+- added variables
