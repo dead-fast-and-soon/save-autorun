@@ -37,7 +37,7 @@ module.exports = class SaveAutorun
 		@subscriptions.dispose()
 
 	openConfig: ->
-		atom.workspace.open(config.path())
+		@definitions.open()
 
 	# executes a shell command
 	shell: (cmd, dir, callback) -> child = exec cmd, cwd: dir, callback
