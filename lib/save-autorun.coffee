@@ -25,7 +25,7 @@ module.exports = class SaveAutorun
 			'save-autorun:execute-save-autoruns': => @runDefinitions()
 
 		@subscriptions.add atom.commands.add 'atom-workspace',
-			'save-autorun:open-config': => @definitions.load()
+			'save-autorun:open-config': => @definitions.open()
 
 		@subscriptions.add atom.workspace.observeTextEditors (textEditor) =>
 			@subscriptions.add textEditor.onDidSave (event) => @runDefinitions(textEditor)
@@ -35,9 +35,6 @@ module.exports = class SaveAutorun
 
 	deactivate: ->
 		@subscriptions.dispose()
-
-	openConfig: ->
-		@definitions.open()
 
 	# executes a shell command
 	shell: (cmd, dir, callback) -> child = exec cmd, cwd: dir, callback
