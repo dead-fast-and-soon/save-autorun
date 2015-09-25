@@ -3,8 +3,8 @@
   {
     'label': 'File'
     'submenu': [
-      'label': 'Open Save Autorun Config'
-      'command': 'save-autorun:open-config'
+      'label': 'Open SAR Global Definitions'
+      'command': 'save-autorun:open-global-definitions'
     ]
   }
 ]

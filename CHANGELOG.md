@@ -15,3 +15,11 @@
 - shell commands now use a saved file's project directory, if there is any
 - added a new variable `${project}`
 - updated README
+
+### 0.2.3
+
+- added an option to disable notifications
+- added a keymap to the `open-global-definitions` command
+- `child_process.exec` uses the timeout from the config now
+- changed timeout default value to 0
+- changed the notification formatting a little

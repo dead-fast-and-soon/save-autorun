@@ -4,11 +4,16 @@ _path = require 'path'
 
 module.exports = class SaveAutorun
 	config:
+		notifications:
+			title: 'Notifications'
+			description: 'Show notifications when a save triggers commands.'
+			type: 'boolean'
+			default: true
 		timeout:
 			title: 'Command Timeout'
 			description: 'How much time in milliseconds before a command will time out.'
 			type: 'integer'
-			default: 500
+			default: 0
 
 	# the current instance of CompositeDisposable
 	subscriptions: null
@@ -22,10 +27,10 @@ module.exports = class SaveAutorun
 		@subscriptions = new CompositeDisposable
 
 		@subscriptions.add atom.commands.add 'atom-workspace',
-			'save-autorun:execute-save-autoruns': => @runDefinitions()
+			'save-autorun:execute-definitions': => @runDefinitions()
 
 		@subscriptions.add atom.commands.add 'atom-workspace',
-			'save-autorun:open-config': => @definitions.open()
+			'save-autorun:open-global-definitions': => @definitions.open()
 
 		@subscriptions.add atom.workspace.observeTextEditors (textEditor) =>
 			@subscriptions.add textEditor.onDidSave (event) => @runDefinitions event['path']
@@ -36,8 +41,26 @@ module.exports = class SaveAutorun
 	deactivate: ->
 		@subscriptions.dispose()
 
+	notifyInfo: (message) -> @notifyInfo message ''
+	notifyInfo: (message, details) ->
+		if atom.config.get('save-autorun.notifications')
+			atom.notifications.addInfo message, detail: details
+
+	notifyError: (message) -> @notifyError message ''
+	notifyError: (message, details) ->
+		if atom.config.get('save-autorun.notifications')
+			atom.notifications.addError message, detail: details
+
+	notifySuccess: (message) -> @notifySuccess message ''
+	notifySuccess: (message, details) ->
+		if atom.config.get('save-autorun.notifications')
+			atom.notifications.addSuccess message, detail: details
+
+	getTimeout: -> atom.config.get('save-autorun.timeout')
+
 	# executes a shell command
-	shell: (cmd, dir, callback) -> child = exec cmd, cwd: dir, callback
+	shell: (cmd, dir, callback) ->
+		return exec cmd, {cwd: dir, timeout: @getTimeout()}, callback
 
 	# replaces envvar-like variable patterns (${var}) with a value
 	replaceVar: (command, key, value) ->
@@ -92,17 +115,12 @@ module.exports = class SaveAutorun
 		# loop through all defined commands for this file
 		commands = @definitions.get filePath
 		if commands.length > 0
-			errors = 0
-			atom.notifications.addInfo 'executing commands in:', detail: cwd
+			output = ''
+			@notifyInfo 'executing ' + commands.length + ' command(s)', projectPath
 			for rawCommand in commands
 				command = @prepareCommand(rawCommand, filePath, projectPath)
 				@shell command, projectPath, (error, stdout, stderr) =>
 					if not error?
-						atom.notifications.addSuccess command
+						@notifySuccess command, stdout
 					else
-						atom.notifications.addError command, detail: error
-						error++
-			if errors = 0
-				atom.notifications.addSuccess 'all commands executed successfully!'
-			else
-				atom.notifications.addWarning 'at least one commmand has failed!'
+						@notifyError command, error
