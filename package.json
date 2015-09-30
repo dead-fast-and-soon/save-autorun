@@ -1,7 +1,7 @@
 {
   "name": "save-autorun",
   "main": "./lib/main",
-  "version": "0.3",
+  "version": "0.3.0",
   "description": "Automatically run shell commands when you save files.",
   "keywords": [
     "save",
