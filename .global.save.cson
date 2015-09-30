@@ -1,0 +1,11 @@
+# Save Autorun Definitions
+#
+# Definitions under the "*" key are globally active.
+# Create project-specific definitions by making a new key, where the key is
+# the full path to the project.
+#
+# For more details on how to create definitions see:
+# https://atom.io/packages/save-autorun
+
+"*": {}
+#	"**.test": "command"

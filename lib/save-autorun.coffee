@@ -15,6 +15,9 @@ module.exports = class SaveAutorun
 			type: 'integer'
 			default: 0
 
+	# the path to this package
+	directory: null
+
 	# the current instance of CompositeDisposable
 	subscriptions: null
 
@@ -22,6 +25,7 @@ module.exports = class SaveAutorun
 	definitions: null
 
 	constructor: ->
+		@directory = atom.packages.resolvePackagePath('save-autorun')
 
 	activate: (state) ->
 		@subscriptions = new CompositeDisposable
@@ -30,13 +34,13 @@ module.exports = class SaveAutorun
 			'save-autorun:execute-definitions': => @runDefinitions()
 
 		@subscriptions.add atom.commands.add 'atom-workspace',
-			'save-autorun:open-global-definitions': => @definitions.open()
+			'save-autorun:open-global-definitions': => @definitions.openDefinitions()
 
 		@subscriptions.add atom.workspace.observeTextEditors (textEditor) =>
 			@subscriptions.add textEditor.onDidSave (event) => @runDefinitions event['path']
 
 		SaveDefinitions = require './save-definitions'
-		@definitions = new SaveDefinitions()
+		@definitions = new SaveDefinitions(@)
 
 	deactivate: ->
 		@subscriptions.dispose()
@@ -104,23 +108,40 @@ module.exports = class SaveAutorun
 		# TODO: check if 'path' is a file?
 
 		# reload definitions if the definitions file was saved
-		if filePath is @definitions.path() then @definitions.reload()
-
-		projectPath = @getProjectPath filePath
+		if filePath is @definitions.globalFilePath then @definitions.reload()
 
 		# current working directory
-		# if there is no projectPath then use filePath instead
-		projectPath = if projectPath? then projectPath else filePath
+		projectPath = @getProjectPath filePath
 
-		# loop through all defined commands for this file
-		commands = @definitions.get filePath
-		if commands.length > 0
-			output = ''
-			@notifyInfo 'executing ' + commands.length + ' command(s)', projectPath
-			for rawCommand in commands
+		if projectPath?
+			isProject = true
+		else # if there is no projectPath then use filePath instead
+			isProject = false
+			projectPath = _path.dirname(filePath)
+
+		# collect definitions for this file
+		def = @definitions.getDefinitions filePath, projectPath
+
+		# run all defined commands
+		#
+		if def.commands.length > 0
+			@notifyInfo 'executing ' + def.commands.length + ' command(s)', projectPath
+			for rawCommand in def.commands
 				command = @prepareCommand(rawCommand, filePath, projectPath)
 				@shell command, projectPath, (error, stdout, stderr) =>
 					if not error?
 						@notifySuccess command, stdout
 					else
 						@notifyError command, error
+
+		# run all defined scripts
+		#
+		if def.scripts.length > 0
+			@notifyInfo 'executing ' + def.scripts.length + ' scripts(s)', projectPath
+			for script in def.scripts
+				try
+					ext = _path.extname(script)
+					require(script)(filePath)
+					@notifySuccess script
+				catch error
+					@notifyError script, error

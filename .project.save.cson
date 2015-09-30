@@ -1,0 +1,6 @@
+# Save Autorun Definitions
+#
+# For more details on how to create definitions see:
+# https://atom.io/packages/save-autorun
+
+#"**.test": "command"
