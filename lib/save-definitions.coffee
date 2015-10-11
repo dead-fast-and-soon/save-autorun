@@ -47,7 +47,6 @@ module.exports = class SaveDefinitions
 				if err?
 					atom.notifications.addError 'unable to create ' + filePath,
 						err
-		console.log cson
 		return cson
 
 	relativePath: (filePath) ->
@@ -71,28 +70,25 @@ module.exports = class SaveDefinitions
 
 	getDefinitions: (filePath, projectPath) ->
 		if not projectPath?
-			atom.notifications.addInfo('not a project, getting globals')
+			console.log ('save-autorun: not a project, getting globals')
 			return @getGlobalDefinitions filePath, null
 
 		@projectFilePath = _path.resolve(projectPath, '.save.cson')
 
 		if not @fileExists @projectFilePath
-			atom.notifications.addInfo('project .save.cson doesn\'t exist, getting globals')
+			console.log ('save-autorun: project .save.cson doesn\'t exist, getting globals')
 			return @getGlobalDefinitions filePath, projectPath
 
-		atom.notifications.addInfo('reading definitions from project .save.cson', detail: @projectFilePath)
 		cson = season.readFileSync @projectFilePath
 		# read project .save.cson
 		def = {commands: [], scripts: []}
 		dir = _path.dirname(filePath)
 		for glob, obj of cson
 			match = minimatch(atom.project.relativize(filePath), glob)
-			console.log obj
 			if match
 				tempDef = @_parseDefinitionObject obj, dir
 				def.commands = def.commands.concat(tempDef.commands)
 				def.scripts = def.scripts.concat(tempDef.scripts)
-		console.log def
 		return def
 
 	_parseDefinitionObject: (obj, dir) ->
