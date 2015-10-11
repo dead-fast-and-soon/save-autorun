@@ -23,3 +23,7 @@
 - `child_process.exec` uses the timeout from the config now
 - changed timeout default value to 0
 - changed the notification formatting a little
+
+## 0.3.1
+
+- fixed file path separators only using `\\`

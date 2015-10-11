@@ -8,16 +8,21 @@ module.exports = class SaveDefinitions
 	# the current instance of SaveAutorun
 	pkg: null
 
-	paths:
-		global: atom.getConfigDirPath() + '\\.save.cson'
+	sep: _path.sep
+
+	paths: {}
 
 	# the read default definition files (initialized in constructor)
 	defaults: {}
 
 	constructor: (@pkg) ->
+		@paths =
+			global: atom.getConfigDirPath() + @sep + '.save.cson'
+
 		@defaults =
-			global:  fs.readFileSync(@pkg.directory + "\\.global.save.cson", "utf8")
-			project: fs.readFileSync(@pkg.directory + "\\.project.save.cson", "utf8")
+			global:  fs.readFileSync(@pkg.directory + @sep + ".global.save.cson", "utf8")
+			project: fs.readFileSync(@pkg.directory + @sep + ".project.save.cson", "utf8")
+
 		@cson = @parseDefinitions()
 
 	# reads from the main config file, or creates one if it doesn't exist
