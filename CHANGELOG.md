@@ -27,3 +27,8 @@
 ## 0.3.1
 
 - fixed file path separators only using `\\`
+
+## 0.3.2
+
+- fixed commands array assignment (0f60a55)
+- fixed mismatched parenthesis (5620ecb)
