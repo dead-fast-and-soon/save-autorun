@@ -14,6 +14,7 @@ These are a list of variables you can use in command definitions. The variables 
 
 - `${file}`: the name of the file saved.
 - `${name}`: the name of the file saved without the file extension.
+- `${path}`: the absolute path to the file saved. (NOTE: Not working on OS X; see #6)
 - `${ext}`: the extension of the file saved.
 - `${dir}`: the absolute path to the directory containing the file saved.
 - `${project}`: the absolute path to the root project directory. if a project doesn't exist, then this variable will be identical to `${dir}`.
@@ -40,11 +41,12 @@ Under `"*"` (the global group), you can define shell commands by using a glob as
 ```
 You can also define multiple commands to be used by using an array of commands as the value instead of just one:
 ```cson
-"*":
+"*": {
 	"**/*.less": [
 		"lessc ${file} ${name}.css"
 		"(another command)"
 	]
+}
 ```
 You can also define both commands and scripts to trigger by using an object with a `command` key and `script` key as the value. For scripts, the value can be a path to a `.coffee` file that is absolute or relative to the file saved: (note that the value for `command` and `script` can also be a string or an array of strings)
 ```cson
