@@ -3,10 +3,10 @@
 Automatically run commands and or scripts when you save files.
 ```cson
 # converts an x.md file into x.html using pandoc
-'**.md': 'pandoc ${file} -o ${name}.html'
+'**/*.md': 'pandoc ${file} -o ${name}.html'
 
 # compiles a x.less file into x.css using lessc
-'**.less': 'lessc ${file} ${name}.css'
+'**/*.less': 'lessc ${file} ${name}.css'
 ```
 ### Variables
 
@@ -14,7 +14,7 @@ These are a list of variables you can use in command definitions. The variables 
 
 - `${file}`: the name of the file saved.
 - `${name}`: the name of the file saved without the file extension.
-- `${path}`: the absolute path to the file saved.
+- `${path}`: the absolute path to the file saved. (NOTE: Not working on OS X; see #6)
 - `${ext}`: the extension of the file saved.
 - `${dir}`: the absolute path to the directory containing the file saved.
 - `${project}`: the absolute path to the root project directory. if a project doesn't exist, then this variable will be identical to `${dir}`.
@@ -35,26 +35,29 @@ A newly generated `.save.cson` will give you:
 ```
 Under `"*"` (the global group), you can define shell commands by using a glob as a key and a command as the value. Any file saved that matches that glob will trigger that command:
 ```cson
-"*":
-	"**.less": "lessc ${file} ${name}.css"
+"*": {
+	"**/*.less": "lessc ${file} ${name}.css"
+}
 ```
 You can also define multiple commands to be used by using an array of commands as the value instead of just one:
 ```cson
-"*":
-	"**.less": [
+"*": {
+	"**/*.less": [
 		"lessc ${file} ${name}.css"
 		"(another command)"
 	]
+}
 ```
 You can also define both commands and scripts to trigger by using an object with a `command` key and `script` key as the value. For scripts, the value can be a path to a `.coffee` file that is absolute or relative to the file saved: (note that the value for `command` and `script` can also be a string or an array of strings)
 ```cson
-"*":
-	"**.less":
+"*": {
+	"**/*.less":
 		command: [
 			"lessc ${file} ${name}.css"
 			"(another command)"
 		]
 		script: "save.coffee"
+}
 ```
 Information on what goes in a save script is in the [Save Scripts](#save-scripts) section.
 
@@ -64,12 +67,12 @@ In addition, you can make project-specific groups (as opposed to the `"*"` group
 ```cson
 "*": {}
 "C:\Git\Project\":
-	"**.less": "lessc ${file} ${name}.css"
+	"**/*.less": "lessc ${file} ${name}.css"
 ```
 ### Project-Specific Save Definitions
 If desired, you can also make your own `.save.cson` file in the root of your project folder. Please note that the format the definitions is not exactly the same as the global `.save.cson` file, the only difference being that you do not need to define groups such as `"*"`. Therefore, this is a valid project-specific `.save.cson`:
 ```cson
-"**.less": "lessc ${file} ${name}.css"
+"**/*.less": "lessc ${file} ${name}.css"
 ```
 Note that if this file exists, then the global `.save.cson` will be ignored.
 
