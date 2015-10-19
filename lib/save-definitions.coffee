@@ -64,8 +64,8 @@ module.exports = class SaveDefinitions
 					match = minimatch(atom.project.relativize(filePath), glob)
 					if match
 						tempDef = @_parseDefinitionObject obj, dir
-						def.commands.concat(tempDef.commands)
-						def.scripts.concat(tempDef.scripts)
+						def.commands = def.commands.concat(tempDef.commands)
+						def.scripts = def.scripts.concat(tempDef.scripts)
 		return def
 
 	getDefinitions: (filePath, projectPath) ->
