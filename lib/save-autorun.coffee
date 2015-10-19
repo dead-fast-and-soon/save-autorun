@@ -101,7 +101,7 @@ module.exports = class SaveAutorun
 		if textEditor?
 			@runDefinitions textEditor.getPath()
 		else
-			console.warn "save-autorun: unable to run save scripts on this pane.")
+			console.warn ("save-autorun: unable to run save scripts on this pane.")
 
 	# executes any possible definitions that this file furfills
 	runDefinitions: (filePath) ->
