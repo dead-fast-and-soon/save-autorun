@@ -14,7 +14,7 @@ These are a list of variables you can use in command definitions. The variables 
 
 - `${file}`: the name of the file saved.
 - `${name}`: the name of the file saved without the file extension.
-- `${path}`: the absolute path to the file saved. (NOTE: Not working on OS X; see #6)
+- `${path}`: the absolute path to the file saved.
 - `${ext}`: the extension of the file saved.
 - `${dir}`: the absolute path to the directory containing the file saved.
 - `${project}`: the absolute path to the root project directory. if a project doesn't exist, then this variable will be identical to `${dir}`.
