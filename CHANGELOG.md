@@ -30,5 +30,9 @@
 
 ## 0.3.2
 
-- fixed commands array assignment (0f60a55)
-- fixed mismatched parenthesis (5620ecb)
+- fixed commands array assignment (merge 0f60a55)
+- fixed mismatched parenthesis (merge 5620ecb)
+
+## 0.3.3
+
+- fixed ${path} using the wrong value (#6)
