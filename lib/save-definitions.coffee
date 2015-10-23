@@ -59,7 +59,7 @@ module.exports = class SaveDefinitions
 		def = {commands: [], scripts: []}
 		dir = _path.dirname(filePath)
 		for group, o of @cson
-			if group is "*" or group is projectPath
+			if group is "*" or (!!projectPath and minimatch(projectPath, group))
 				for glob, obj of o
 					match = minimatch(atom.project.relativize(filePath), glob)
 					if match
