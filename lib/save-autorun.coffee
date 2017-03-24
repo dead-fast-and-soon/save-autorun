@@ -88,7 +88,7 @@ module.exports = class SaveAutorun
 	prepareCommand: (command, filePath, projectPath) ->
 		ext = _path.extname(filePath)
 
-		command = @replaceVar(command, 'project',	_path.dirname(projectPath))
+		command = @replaceVar(command, 'project',	projectPath)
 		command = @replaceVar(command, 'file',		_path.basename(filePath))
 		command = @replaceVar(command, 'name',		_path.basename(filePath, ext))
 		command = @replaceVar(command, 'path',		filePath)
