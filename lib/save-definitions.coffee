@@ -93,7 +93,13 @@ module.exports = class SaveDefinitions
 
 	_parseDefinitionObject: (obj, dir) ->
 		def = {commands: [], scripts: []}
-		if (obj instanceof Object)
+		# read each line as a command 
+		# we test for Array before Object because Arrays are Objects too!
+		if (obj instanceof Array)
+			for command in obj
+				def.commands.push command
+		# read command and script fields
+		else if (obj instanceof Object)
 			if obj.command?
 				if obj.command instanceof Array
 					for command in obj.command
@@ -106,10 +112,6 @@ module.exports = class SaveDefinitions
 						def.script.push _path.resolve(dir, script)
 				else
 					def.scripts.push _path.resolve(dir, obj.script.toString())
-		# read each line as a command
-		else if (obj instanceof Array)
-			for command in obj
-				def.commands.push command
 		# convert to string and save as command
 		else
 			def.commands.push obj.toString()
