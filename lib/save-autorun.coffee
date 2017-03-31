@@ -48,17 +48,17 @@ module.exports = class SaveAutorun
 	notifyInfo: (message) -> @notifyInfo message ''
 	notifyInfo: (message, details) ->
 		if atom.config.get('save-autorun.notifications')
-			atom.notifications.addInfo message, detail: details
+			atom.notifications.addInfo message, detail: details, dismissable: true
 
 	notifyError: (message) -> @notifyError message ''
 	notifyError: (message, details) ->
 		if atom.config.get('save-autorun.notifications')
-			atom.notifications.addError message, detail: details
+			atom.notifications.addError message, detail: details, dismissable: true
 
 	notifySuccess: (message) -> @notifySuccess message ''
 	notifySuccess: (message, details) ->
 		if atom.config.get('save-autorun.notifications')
-			atom.notifications.addSuccess message, detail: details
+			atom.notifications.addSuccess message, detail: details, dismissable: true
 
 	getTimeout: -> atom.config.get('save-autorun.timeout')
 
@@ -125,14 +125,18 @@ module.exports = class SaveAutorun
 		# run all defined commands
 		#
 		if def.commands.length > 0
-			@notifyInfo 'executing ' + def.commands.length + ' command(s)', projectPath
+			startMessage = @notifyInfo 'executing ' + def.commands.length + ' command(s)'
 			for rawCommand in def.commands
 				command = @prepareCommand(rawCommand, filePath, projectPath)
 				@shell command, projectPath, (error, stdout, stderr) =>
-					if not error?
-						@notifySuccess command, stdout
-					else
+					startMessage.dismiss()
+					if error
 						@notifyError command, error
+					else if stderr
+						@notifyError command, stderr
+					else
+						successMessage = @notifySuccess command
+						successMessage.dismiss()
 
 		# run all defined scripts
 		#
