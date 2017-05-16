@@ -127,7 +127,8 @@ module.exports = class SaveAutorun
 		if def.commands.length > 0
 			startMessage = @notifyInfo 'executing ' + def.commands.length + ' command(s)'
 			for rawCommand in def.commands
-				command = @prepareCommand(rawCommand, filePath, projectPath)
+				tmpCommand = @prepareCommand(rawCommand, filePath, projectPath)
+				`const command = tmpCommand`
 				@shell command, projectPath, (error, stdout, stderr) =>
 					startMessage.dismiss()
 					if error
