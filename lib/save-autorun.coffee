@@ -14,6 +14,11 @@ module.exports = class SaveAutorun
 			description: 'How much time in milliseconds before a command will time out.'
 			type: 'integer'
 			default: 0
+		sequentialExecution:
+			title: 'Sequential Execution'
+			description: 'Queues commands and executes them one at a time instead of all at the same time.'
+			type: 'boolean'
+			default: false
 
 	# the path to this package
 	directory: null
@@ -23,6 +28,12 @@ module.exports = class SaveAutorun
 
 	# the current instance of SaveDefinitions
 	definitions: null
+
+	# the current queue of commands and scripts to execute
+	executionQueue: []
+
+	# whether the executionQueue is being processed or not
+	queueRunning: false
 
 	constructor: ->
 		@directory = atom.packages.resolvePackagePath('save-autorun')
@@ -37,7 +48,8 @@ module.exports = class SaveAutorun
 			'save-autorun:open-global-definitions': => @definitions.openDefinitions()
 
 		@subscriptions.add atom.workspace.observeTextEditors (textEditor) =>
-			@subscriptions.add textEditor.onDidSave (event) => @runDefinitions event['path']
+			@subscriptions.add textEditor.onDidSave (event) =>
+				@runDefinitions event['path']
 
 		SaveDefinitions = require './save-definitions'
 		@definitions = new SaveDefinitions(@)
@@ -122,31 +134,78 @@ module.exports = class SaveAutorun
 		# collect definitions for this file
 		def = @definitions.getDefinitions filePath, projectPath
 
-		# run all defined commands
-		#
-		if def.commands.length > 0
-			startMessage = @notifyInfo 'executing ' + def.commands.length + ' command(s)'
-			for rawCommand in def.commands
-				tmpCommand = @prepareCommand(rawCommand, filePath, projectPath)
-				`const command = tmpCommand`
-				@shell command, projectPath, (error, stdout, stderr) =>
-					startMessage.dismiss()
-					if error
-						@notifyError command, error
-					else if stderr
-						@notifyError command, stderr
-					else
-						successMessage = @notifySuccess command
-						successMessage.dismiss()
+		executionQueue = []
 
-		# run all defined scripts
-		#
-		if def.scripts.length > 0
-			@notifyInfo 'executing ' + def.scripts.length + ' scripts(s)', projectPath
-			for script in def.scripts
-				try
-					ext = _path.extname(script)
-					require(script)(filePath)
-					@notifySuccess script
-				catch error
-					@notifyError script, error
+		if def.commands.length
+			notification = @notifyInfo 'executing ' +
+				def.commands.length + ' command(s)'
+			def.commands.forEach (rawCommand, i) =>
+				startNotification = notification unless i
+				executionQueue.push () =>
+					@executeCommand rawCommand, filePath, projectPath, startNotification
+
+		if def.scripts.length
+			notification = @notifyInfo 'executing ' +
+				def.scripts.length + ' scripts(s)', projectPath
+			def.scripts.forEach (script, i) =>
+				startNotification = notification unless i
+				executionQueue.push () =>
+					@executeScript script, filePath, projectPath, startNotification
+
+		return unless executionQueue.length
+
+		if atom.config.get('save-autorun.sequentialExecution')
+			@queueCommands executionQueue
+		else
+			@runAllAtOnce executionQueue
+
+	runAllAtOnce: (commands) ->
+		@handlePromise command() for command in commands
+
+	queueCommands: (commands) ->
+		# add commands to main execution queue
+		commands.forEach (command) => @executionQueue.push command
+		@runSequentially() unless @queueRunning
+
+	runSequentially: (recheck=2) ->
+		# removes first element of array
+		command = @executionQueue.shift()
+
+		@queueRunning = !!command
+		unless @queueRunning
+			# a race condition can occur where the queue has items but the queue won't
+			# run until the next save, this re-checking tries to get rid of that by
+			# going over the data a couple times just to be safe.
+			@runSequentially recheck - 1 if recheck
+			return
+
+		@handlePromise command()
+		.then => @runSequentially()
+
+	handlePromise: (promise) ->
+		promise
+			.then (command) =>
+				successNotification = @notifySuccess command
+				successNotification.dismiss()
+			.catch ({command, reason}) => @notifyError command, reason
+
+	executeCommand: (rawCommand, filePath, projectPath, startNotification) ->
+		command = @prepareCommand rawCommand, filePath, projectPath
+		new Promise (resolve, reject) =>
+			@shell command, projectPath, (error, stdout, stderr) =>
+				startNotification.dismiss() if startNotification
+				if error or stderr
+					reject {command, reason: error or stderr}
+				else
+					resolve command
+
+	executeScript: (script, filePath, projectPath, startNotification) ->
+		new Promise (resolve, reject) =>
+			try
+				ext = _path.extname script
+				require(script) filePath
+				resolve script
+			catch error
+				reject {command: script, reason: error}
+			finally
+				startNotification.dismiss() if startNotification
