@@ -19,6 +19,11 @@ module.exports = class SaveAutorun
 			description: 'Queues commands and executes them one at a time instead of all at the same time.'
 			type: 'boolean'
 			default: false
+		failOnStderr:
+			title: 'Fail on STDERR'
+			description: 'Show an error even when the command succeeded if it wrote anything to STDERR.'
+			type: 'boolean'
+			default: false
 
 	# the path to this package
 	directory: null
@@ -194,8 +199,10 @@ module.exports = class SaveAutorun
 		new Promise (resolve, reject) =>
 			@shell command, projectPath, (error, stdout, stderr) =>
 				startNotification.dismiss() if startNotification
-				if error or stderr
-					reject {command, reason: error or stderr}
+				if error
+					reject {command, reason: error}
+				else if stderr and atom.config.get('save-autorun.failOnStderr')
+					reject {command, reason: stderr}
 				else
 					resolve command
 
