@@ -94,6 +94,10 @@ module.exports = class SaveAutorun
 		command = @replaceVar(command, 'path',		filePath)
 		command = @replaceVar(command, 'ext',		ext)
 		command = @replaceVar(command, 'dir',		_path.dirname(filePath))
+		relPath = filePath.substr(_path.dirname(projectPath).length + 1,filePath.length)
+		command = @replaceVar(command, 'projectRelPath', relPath)
+		relDir = filePath.substr(_path.dirname(projectPath).length + 1,filePath.length - ext.length - 1)
+		command = @replaceVar(command, 'projectRelDir', relDir)
 		return command
 
 	runDefinitions: ->
