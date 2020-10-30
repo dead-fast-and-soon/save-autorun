@@ -27,7 +27,7 @@ If the saved file was not within any Project, then the directory containing that
 
 _(To all users who previously used a `save-autorun.cson` for global definitions prior to version 0.3, please convert your definitions to the newly generated `.save.cson`)_
 
-When this package is activated, a file `.save.cson` will appear in Atom's config directory. An option `Open Save Definitions` will also appear under the `File` tab to easily access this file.
+When this package is activated, a file `.save.cson` will appear in Atom's config directory. An option `Open SAR Global Definitions` will also appear under the `File` tab to easily access this file.
 
 A newly generated `.save.cson` will give you:
 ```cson
